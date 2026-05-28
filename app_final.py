@@ -13,9 +13,19 @@ from pdf_report import generate_report_pdf
 # Config
 # ─────────────────────────────────────────────────────────────────────────────
 
-# Cloud deployment: set API_URL env var on Render to your backend URL
-# Local dev: defaults to localhost
-API = os.getenv("API_URL", "http://localhost:8000/api/v1").rstrip("/")
+# API URL resolution order:
+#   1. API_URL  environment variable  (set this on Render frontend service)
+#   2. Streamlit secrets              (st.secrets["API_URL"] — for Streamlit Cloud)
+#   3. Render backend default         (your deployed backend URL)
+#   4. localhost                      (local dev only)
+_RENDER_BACKEND = "https://career-cie-backend.onrender.com/api/v1"
+_DEFAULT_API    = os.getenv("API_URL", "")
+if not _DEFAULT_API:
+    try:
+        _DEFAULT_API = st.secrets.get("API_URL", _RENDER_BACKEND)
+    except Exception:
+        _DEFAULT_API = _RENDER_BACKEND
+API = _DEFAULT_API.rstrip("/")
 
 st.set_page_config(
     page_title="Career Intelligence Engine",
@@ -34,7 +44,7 @@ def api_get(path: str, params: dict = None):
         r.raise_for_status()
         return r.json()
     except requests.exceptions.ConnectionError:
-        st.error("⚠️ Backend not running. Start it with: `python main.py`")
+        st.error(f"⚠️ Cannot reach backend at: `{API}`  — check that the backend service is running on Render.")
         return {}
     except Exception as e:
         st.error(f"API error ({path}): {e}")
@@ -46,7 +56,7 @@ def api_post(path: str, data: dict = None, params: dict = None):
         r.raise_for_status()
         return r.json()
     except requests.exceptions.ConnectionError:
-        st.error("⚠️ Backend not running. Start it with: `python main.py`")
+        st.error(f"⚠️ Cannot reach backend at: `{API}`  — check that the backend service is running on Render.")
         return {}
     except Exception as e:
         st.error(f"API error ({path}): {e}")
