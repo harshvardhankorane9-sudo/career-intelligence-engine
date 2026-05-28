@@ -18,3 +18,4 @@ requests>=2.31.0
 plotly>=5.20.0
 
 reportlab>=4.0.0
+psycopg2-binary
